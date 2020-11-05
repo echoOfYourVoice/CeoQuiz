@@ -1,10 +1,15 @@
 package com.example.ceoquiz
 
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import android.view.View
+import android.view.ViewAnimationUtils
 import android.widget.Button
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
@@ -21,6 +26,7 @@ class CheatActivity : AppCompatActivity() {
     private var mAnswerIsTrue = false
     private lateinit var mAnswerTextView: TextView
     private lateinit var mShowAnswerButton: Button
+    private lateinit var mApiLevel: TextView
     private var  mIsAnswerShown = false
 
     fun newIntent(packageContext: Context, answerIsTrue: Boolean): Intent {
@@ -36,6 +42,10 @@ class CheatActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_cheat)
+
+        mApiLevel = findViewById(R.id.api_level_view)
+        mApiLevel.text = getString(R.string.api_level) + {Build.VERSION.SDK_INT}
+
         mIsAnswerShown = false
         if (savedInstanceState != null) {
             mIsAnswerShown = savedInstanceState.getBoolean(KEY_INDEX)
@@ -46,6 +56,20 @@ class CheatActivity : AppCompatActivity() {
         mAnswerTextView = findViewById(R.id.answer_text_view)
         mShowAnswerButton = findViewById(R.id.show_answer_button)
         mShowAnswerButton.setOnClickListener {
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                val cx = mShowAnswerButton.width / 2
+                val cy = mShowAnswerButton.height / 2
+                val radius = mShowAnswerButton.width.toFloat()
+                val anim = ViewAnimationUtils.createCircularReveal(mShowAnswerButton, cx, cy, radius, 0F)
+                anim.addListener(object : AnimatorListenerAdapter() {
+                    override fun onAnimationEnd(animation: Animator) {
+                        super.onAnimationEnd(animation)
+                        mShowAnswerButton.visibility = View.INVISIBLE
+                    }
+                })
+                anim.start()
+            } else mShowAnswerButton.visibility = View.INVISIBLE
             if (mAnswerIsTrue) mAnswerTextView.setText(R.string.true_button)
             else mAnswerTextView.setText(R.string.false_button)
             mIsAnswerShown = true
@@ -66,3 +90,4 @@ class CheatActivity : AppCompatActivity() {
     }
 
 }
+

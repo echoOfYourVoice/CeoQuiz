@@ -18,7 +18,8 @@ class MainActivity : AppCompatActivity() {
         const val TAG = "QuizActivity"
         const val KEY_INDEX = "index"
         const val REQUEST_CODE_CHEAT = 0
-        private var misCheater = false
+        private var mIsCheater = false
+        private var mHintsLeft = 3
     }
 
     private lateinit var mTrueButton: Button
@@ -27,6 +28,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var mNextButton: ImageButton
     private lateinit var mPrevButton: ImageButton
     private lateinit var mQuestionTextView: TextView
+
 
     private val mQuestionBank = arrayListOf(
         Question(R.string.question_australia, true),
@@ -64,11 +66,12 @@ class MainActivity : AppCompatActivity() {
 
         mNextButton = findViewById(R.id.next_button)
         mNextButton.setOnClickListener {
-            misCheater = false
+            mIsCheater = false
             mCurrentIndex = (mCurrentIndex + 1) % mQuestionBank.size
             if (mCurrentIndex % mQuestionBank.size == 0) {
                 Toast.makeText(this, "Right answers: $mRightAnswers", Toast.LENGTH_SHORT).show()
                 mRightAnswers = 0
+                mHintsLeft = 3
                 mPastQuestions.clear()
             }
             updateQuestion()
@@ -124,8 +127,10 @@ class MainActivity : AppCompatActivity() {
         if (resultCode != Activity.RESULT_OK) return
         if (requestCode == REQUEST_CODE_CHEAT) {
             if (data == null) return
-            misCheater = (CheatActivity::wasAnswerShown)(CheatActivity(), data)
+            mIsCheater = (CheatActivity::wasAnswerShown)(CheatActivity(), data)
+            if (mIsCheater) if (mHintsLeft > 0) mHintsLeft--
         }
+        setEnabledButtons()
     }
 
     /*
@@ -150,7 +155,7 @@ class MainActivity : AppCompatActivity() {
         val answerIsTrue = mQuestionBank[mCurrentIndex].mAnswerTrue
 
         val messageResId: Int
-        messageResId = if (misCheater) R.string.judgment_toast
+        messageResId = if (mIsCheater) R.string.judgment_toast
         else {
             if (userPressedTrue == answerIsTrue) {
                 R.string.correct_toast
@@ -175,5 +180,6 @@ class MainActivity : AppCompatActivity() {
         val enabled = mPastQuestions.contains(mQuestionBank[mCurrentIndex])
         mFalseButton.isEnabled = !enabled
         mTrueButton.isEnabled = !enabled
+        mCheatButton.isEnabled = mHintsLeft != 0
     }
 }

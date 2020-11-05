@@ -1,7 +1,7 @@
 package com.example.ceoquiz
 
+import android.app.Activity
 import android.content.Intent
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import android.view.Gravity
@@ -9,11 +9,17 @@ import android.widget.Button
 import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
 
-const val TAG = "QuizActivity"
-const val KEY_INDEX = "index"
 
 class MainActivity : AppCompatActivity() {
+
+    companion object {
+        const val TAG = "QuizActivity"
+        const val KEY_INDEX = "index"
+        const val REQUEST_CODE_CHEAT = 0
+        private var misCheater = false
+    }
 
     private lateinit var mTrueButton: Button
     private lateinit var mFalseButton: Button
@@ -35,7 +41,6 @@ class MainActivity : AppCompatActivity() {
     private var mRightAnswers = 0
 
     private val mPastQuestions = mutableListOf<Question>()
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Log.d(TAG, "onCreate(Bundle) called")
@@ -59,6 +64,7 @@ class MainActivity : AppCompatActivity() {
 
         mNextButton = findViewById(R.id.next_button)
         mNextButton.setOnClickListener {
+            misCheater = false
             mCurrentIndex = (mCurrentIndex + 1) % mQuestionBank.size
             if (mCurrentIndex % mQuestionBank.size == 0) {
                 Toast.makeText(this, "Right answers: $mRightAnswers", Toast.LENGTH_SHORT).show()
@@ -77,8 +83,11 @@ class MainActivity : AppCompatActivity() {
 
         mCheatButton = findViewById(R.id.cheat_button)
         mCheatButton.setOnClickListener {
-            val intent = Intent(this, CheatActivity::class.java)
-            startActivity(intent)
+            //val intent = Intent(this, CheatActivity::class.java)
+            val answerIsTrue: Boolean = mQuestionBank[mCurrentIndex].mAnswerTrue
+            val intent = (CheatActivity::newIntent)(CheatActivity(),this, answerIsTrue)
+            //startActivity(intent)
+            startActivityForResult(intent, REQUEST_CODE_CHEAT)
         }
 
         updateQuestion()
@@ -109,12 +118,22 @@ class MainActivity : AppCompatActivity() {
         Log.d(TAG, "onDestroy() called")
     }
 
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        Log.i("dataResult", data.toString())
+        if (resultCode != Activity.RESULT_OK) return
+        if (requestCode == REQUEST_CODE_CHEAT) {
+            if (data == null) return
+            misCheater = (CheatActivity::wasAnswerShown)(CheatActivity(), data)
+        }
+    }
+
     /*
-    Для сохранения в Bundle и восстановления из него подходят примитивные типы и классы, реализующие интерфейс Serializable или Parcelable.
-    Впрочем, обычно сохранение объектов пользовательских типов в Bundle считается нежелательным, потому что данные могут потерять актуальность к моменту их
-    извлечения. Лучше организовать для данных другой тип хранилища и сохранить
-    в Bundle примитивный идентификатор
-     */
+        Для сохранения в Bundle и восстановления из него подходят примитивные типы и классы, реализующие интерфейс Serializable или Parcelable.
+        Впрочем, обычно сохранение объектов пользовательских типов в Bundle считается нежелательным, потому что данные могут потерять актуальность к моменту их
+        извлечения. Лучше организовать для данных другой тип хранилища и сохранить
+        в Bundle примитивный идентификатор
+         */
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         Log.i(TAG, "onSaveInstanceState")
@@ -131,11 +150,13 @@ class MainActivity : AppCompatActivity() {
         val answerIsTrue = mQuestionBank[mCurrentIndex].mAnswerTrue
 
         val messageResId: Int
-
-        messageResId = if (userPressedTrue == answerIsTrue) {
-            R.string.correct_toast
-        } else {
-            R.string.incorrect_toast
+        messageResId = if (misCheater) R.string.judgment_toast
+        else {
+            if (userPressedTrue == answerIsTrue) {
+                R.string.correct_toast
+            } else {
+                R.string.incorrect_toast
+            }
         }
 
         if (messageResId == R.string.correct_toast) mRightAnswers++

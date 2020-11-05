@@ -17,6 +17,7 @@ class MainActivity : AppCompatActivity() {
     companion object {
         const val TAG = "QuizActivity"
         const val KEY_INDEX = "index"
+        const val PAST_QUESTIONS = "pastQuestions"
         const val REQUEST_CODE_CHEAT = 0
         private var mIsCheater = false
         private var mHintsLeft = 3
@@ -42,13 +43,17 @@ class MainActivity : AppCompatActivity() {
     private var mCurrentIndex = 0
     private var mRightAnswers = 0
 
-    private val mPastQuestions = mutableListOf<Question>()
+    private var mPastQuestions = mutableListOf<Int>()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Log.d(TAG, "onCreate(Bundle) called")
         setContentView(R.layout.activity_main)
 
-        if (savedInstanceState != null) mCurrentIndex = savedInstanceState.getInt(KEY_INDEX, 0)
+        if (savedInstanceState != null) {
+            mCurrentIndex = savedInstanceState.getInt(KEY_INDEX, 0)
+            mPastQuestions = savedInstanceState.getIntArray(PAST_QUESTIONS)!!.toMutableList()
+        }
 
         mQuestionTextView = findViewById(R.id.question_text_view)
 
@@ -94,6 +99,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         updateQuestion()
+        setEnabledButtons()
     }
 
     override fun onStart() {
@@ -143,6 +149,7 @@ class MainActivity : AppCompatActivity() {
         super.onSaveInstanceState(outState)
         Log.i(TAG, "onSaveInstanceState")
         outState.putInt(KEY_INDEX, mCurrentIndex)
+        outState.putIntArray(PAST_QUESTIONS, mPastQuestions.toIntArray())
     }
 
     private fun updateQuestion() {
@@ -172,12 +179,12 @@ class MainActivity : AppCompatActivity() {
             setGravity(Gravity.TOP, 0, 0)
             show()
         }
-        mPastQuestions.add(mQuestionBank[mCurrentIndex])
+        mPastQuestions.add(mCurrentIndex)
         setEnabledButtons()
     }
 
     private fun setEnabledButtons() {
-        val enabled = mPastQuestions.contains(mQuestionBank[mCurrentIndex])
+        val enabled = mPastQuestions.contains(mCurrentIndex)
         mFalseButton.isEnabled = !enabled
         mTrueButton.isEnabled = !enabled
         mCheatButton.isEnabled = mHintsLeft != 0

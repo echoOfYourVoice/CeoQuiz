@@ -44,7 +44,7 @@ class CheatActivity : AppCompatActivity() {
         setContentView(R.layout.activity_cheat)
 
         mApiLevel = findViewById(R.id.api_level_view)
-        mApiLevel.text = getString(R.string.api_level) + {Build.VERSION.SDK_INT}
+        mApiLevel.text = "${getString(R.string.api_level)} ${Build.VERSION.SDK_INT}"
 
         mIsAnswerShown = false
         if (savedInstanceState != null) {
